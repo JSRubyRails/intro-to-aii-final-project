@@ -9,3 +9,12 @@ id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness
 8,Night Drive Loop,Neon Echo,synthwave,moody,0.75,110,0.49,0.73,0.22
 9,Focus Flow,LoRoom,lofi,focused,0.40,80,0.59,0.60,0.78
 10,Rooftop Lights,Indigo Parade,indie pop,happy,0.76,124,0.81,0.82,0.35
+11,Rainy Window Waltz,Clara Voss,classical,melancholy,0.22,68,0.38,0.30,0.97
+12,Block Party,Crate Kings,hip-hop,energetic,0.85,96,0.74,0.91,0.08
+13,Porch & Fireflies,Dusty Hollow,country,nostalgic,0.44,104,0.76,0.67,0.82
+14,Devil's Slide,Iron Veil,metal,intense,0.97,168,0.30,0.72,0.04
+15,Velvet Dusk,Sable & June,r&b,romantic,0.61,88,0.78,0.69,0.44
+16,Autumn Folk Tale,The Birch Trio,folk,nostalgic,0.33,94,0.66,0.48,0.91
+17,Neon Mirage,Prism Circuit,electronic,dreamy,0.69,128,0.62,0.85,0.11
+18,Blue Matchbook,Sadie Raines,blues,melancholy,0.50,72,0.43,0.45,0.88
+19,Solar Drift,Orbit Bloom,ambient,dreamy,0.19,55,0.70,0.33,0.95

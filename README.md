@@ -29,6 +29,14 @@ Some prompts to answer:
 
 You can include a simple diagram or bullet list if helpful.
 
+- Diffetent songs are attributed with different genres (pop, Lofi, rock, jazz, etc.) and moods (happy, chill intense, relaxed, etc.). Energy, valence, danceability, acousticness, and tempo_bpm capture audio characteristics within the range of 0-1 (except tempo_bpm). 
+
+- The UserProfile stores four preference signals: favorite_genre, favorite_mood, target_energy (number between 0-1 representing how high-energy the music should be) and likes_acoustic (indicates if user prefers acoustic or electric-leaning sounds)
+
+- The Recommender computes a score by combining a genre match (1 if the song's genre = the user's favorite, 0 otherwise), mood match (same concept as genre match), energy similarity (1 - abs(song.energy - user.target_energy)), and an acousticness match (same concept as genre and mood but you convert). Each component is multiplied by a certain weight (genre and mood weighted the most) and summed into a single score. 
+
+- Each song is scored through 'Recommender' and sorted from highest to lowest. The top k songs (currently set to 5) are returned as the song recommendations. 
+
 ---
 
 ## Getting Started
