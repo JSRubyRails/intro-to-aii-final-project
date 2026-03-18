@@ -235,3 +235,18 @@ A few sentences about what you learned:
 ## Output of song recommendations
 
 ![alt text](recommend_output.png)
+
+
+## Edge-cases 
+
+1. ![alt text](first_edgecase.png)
+
+2. ![alt text](second_edgecase.png)
+
+3. ![alt text](third_edgecase.png)
+
+4. ![alt text](fourth_edgecase.png)
+
+5. ![alt text](fifth_edgecase.png)
+
+6. ![alt text](image.png)

@@ -70,6 +70,7 @@ Prompts:
 - Cases where the system overfits to one preference  
 - Ways the scoring might unintentionally favor some users  
 
+- The scoring formula awards a fixed +2.0 bonus for a genre match, which is equal to the maximum combined score of mood and energy together. This makes genre the single most decisive factor in every recommendation, as a song in the user's preferred genre will almost always rank above a better-fitting song from a different genre. Combined with an unequal dataset where some genres have only one song, users who favor underrepresented genres receive fewer quality candidates and fall back to pure energy ranking. The system also has no diversity mechanism and the top "k" results are within the same genre, which reinforces what a user likes instead of recommended different music.
 ---
 
 ## 7. Evaluation  
@@ -84,6 +85,12 @@ Prompts:
 - Any simple tests or comparisons you ran  
 
 No need for numeric metrics unless you created some.
+
+- I tested three standard profiles (pop fan, chill listener, and workout listener) and six edge cases designed to stress-test the scoring (energy value outside the normal range, nonexistent mood, nonexistent genre, conflicting preferences, ignoring acousticness, and tiebreakers) 
+
+- For recommendations, I checked if the top result actually made sense for the stated preferences and if the score explanation correctly showed which factors contributed. I also checked if any profiles produced unexpected winners. 
+
+- The biggest surprise was how much the genre bonus controls the outcome, as a song that matched the user's genre always ranked near the top even if the mood and energy were a poor fit. I also realized that the acousticness has no effect on results at all, and entering "sad" as a mood preference failed silently since it's not a recognized mood. 
 
 ---
 
