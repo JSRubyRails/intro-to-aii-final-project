@@ -11,7 +11,7 @@ Your goal is to:
 - Evaluate what your system gets right and wrong
 - Reflect on how this mirrors real world AI recommenders
 
-Replace this paragraph with your own summary of what your version does.
+- GrooveMatch is a rule-based music recommender that scores songs from a 19-song catalog against a user's stated preferences — favorite genre, favorite mood, and target energy level. Each song is assigned a score up to 4.0 (genre match worth 2.0, mood match worth 1.0, and up to 1.0 for energy closeness), then the top 5 results are returned with a breakdown explaining each factor. The project explores how simple scoring formulas can produce sensible recommendations but also reveals real-world tradeoffs: genre dominates the score, acoustic preference is silently ignored, and users with underrepresented genres receive weaker candidates.
 
 ---
 
@@ -94,6 +94,19 @@ Use this section to document the experiments you ran. For example:
 - What happened when you added tempo or valence to the score
 - How did your system behave for different types of users
 
+- Standard Profiles: tested three baseline user types (Pop Fan, Chill Listener, Workout Mode) to verify the scoring produced sensible rankings. In all three cases the top result was a song that matched both genre and mood, confirming the additive scoring worked as intended.
+
+- Out-of-range energy (1.5): set target_energy above the 0–1 scale. The system did not crash, but every song received a negative energy contribution since 1.0 - abs(song.energy - 1.5) is always below zero. Genre and mood bonuses still pushed matching songs to the top, but scores were lower than normal across the board.
+
+- Mood not in dataset ("sad"): no song in the catalog has mood = sad, so the mood bonus never fired. The recommender silently fell back to genre + energy ranking with no warning. The top results were genre matches but none felt emotionally correct for the stated preference.
+
+- Genre not in dataset ("k-pop"): same silent failure: the genre bonus never applied, so the entire top 5 was decided by energy similarity alone, surfacing songs that happened to match the target energy regardless of style.
+
+- Conflicting preferences (classical + melancholy + high energy 0.9): the only classical song in the catalog has energy 0.22, so it received the genre bonus but a heavy energy penalty. A non-classical song with energy closer to 0.9 nearly outscored it, revealing how strongly a mismatched energy hurts a genre-matched song.
+
+- Acousticness ignored: set a folk/nostalgic profile with likes_acoustic = True. The acousticness field is stored in the UserProfile but is never used in score_song, so two songs with acousticness 0.91 and 0.08 scored identically. The preference was silently dropped.
+
+- Tie-breaking at energy 0.385: set target_energy exactly between the two lofi songs (Library Rain at 0.35 and Focus Flow at 0.40). Both are equidistant, so their energy scores are equal. Python's sort is stable, meaning whichever song appeared first in the CSV always wins — the tie is resolved by catalog order, not any meaningful signal.
 ---
 
 ## Limitations and Risks
@@ -108,6 +121,19 @@ Examples:
 
 You will go deeper on this in your model card.
 
+- Genre is weighted at 2.0 points (twice the value of mood) which means a genre-matched song with the wrong mood and wrong energy will almost always outscore a better overall fit from a different genre
+
+- Acousticness is stored in the user profile but never used in scoring, so acoustic preference is silently ignored every time
+
+- Moods and genres not present in the catalog (e.g. "sad", "angry", "k-pop") fail silently and the system returns results without any warning that the user's preference matched nothing
+
+- Energy values outside the 0–1 range are accepted without validation, causing every song to receive a negative energy contribution and distorting the rankings
+
+- There is no diversity mechanism, so the top 5 results can all come from the same genre, reinforcing what a user already listens to rather than surfacing anything new
+
+- Tempo, valence, and danceability are loaded from the dataset but contribute nothing to the score, meaning two songs that feel very different can receive identical rankings
+
+
 ---
 
 ## Reflection
@@ -120,6 +146,10 @@ Write 1 to 2 paragraphs here about what you learned:
 
 - about how recommenders turn data into predictions
 - about where bias or unfairness could show up in systems like this
+
+- Through building GrooveMatch, I realized that the recommender system is solely a number calculated through the sum of weighted rules and lacks any understanding of music. The simplicity of this recommender allows it to be transparent, as it's easy to trace why a song ranked where t did. Real-world recommenders work in the same manner as this, but the features and weights used are much more complex and thorough instead of the simpler rules implemented in GrooveMatch. 
+
+- The bias in the system was a consequence of the design decisions. Giving genre a 2.0 bonus seemed reasonable, but it meant the system would almost always recommend songs in the same genre regardless of mood or energy fit. A user with niche genre would receive worse recommendations simply because the catalog is smaller. Biases like this are prone to show up in real-world products, where a system that's designed to lean towards majority preferences will underrepresent users who have non-mainstream tastes. 
 
 
 ---

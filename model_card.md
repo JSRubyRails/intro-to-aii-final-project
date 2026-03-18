@@ -5,6 +5,8 @@
 Give your model a short, descriptive name.  
 Example: **VibeFinder 1.0**  
 
+- GrooveMatch
+
 ---
 
 ## 2. Intended Use  
@@ -15,7 +17,9 @@ Prompts:
 
 - What kind of recommendations does it generate  
 - What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
+- Is this for real users or classroom exploration 
+
+- GrooveMatch is designed to generate a ranked list of song recommendations from a fixed catalog based on a user's stated genre preference, mood preference, and desired energy level. The model assumes each user has exactly one favorite genre, one favorite mood, and a single numeric energy target with other factors (listening history, implicit feedback, or sense of how preferences change over time).
 
 ---
 
@@ -32,6 +36,8 @@ Prompts:
 
 Avoid code here. Pretend you are explaining the idea to a friend who does not program.
 
+- Every song in the catalog gets a score based on how well it matches your preference. First, if the song's genre matches your favorite genre, it gets a big bonus. Then, if the mood also matches, it gets a smaller bonus. Finally, the system looks at how close the song's energy level is to your target (the closer it is, the more points it earns). All three numbers are added together into a final score, and the songs with the highest scores are returned as your recommendations. 
+
 ---
 
 ## 4. Data  
@@ -45,6 +51,8 @@ Prompts:
 - Did you add or remove data  
 - Are there parts of musical taste missing in the dataset  
 
+- The catalog contains 19 songs across 14 genres: pop, lofi, rock, ambient, jazz, synthwave, indie pop, classical, hip-hop, country, metal, r&b, folk, blues, and electronic. Moods represented include happy, chill, intense, relaxed, moody, focused, melancholy, energetic, nostalgic, romantic, and dreamy. No songs were removed, but several songs were added to the original dataset to cover more genres and edge cases. Several moods like "sad" or "angry" have no songs at all, so a user with those preferences will never get a match. 
+
 ---
 
 ## 5. Strengths  
@@ -55,7 +63,9 @@ Prompts:
 
 - User types for which it gives reasonable results  
 - Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition  
+- Cases where the recommendations matched your intuition 
+
+- The system worked well for users whose favorite genre is well-represented in the catalog. The scoring also handles the standard profiles (pop fan, chill listener, workout listener) intuitively, as it shows the top result in each case is a song that a person with those tastes would enjoy. The explanation output makes it easier to trace exactly why a song ranked where it did. 
 
 ---
 
@@ -105,6 +115,8 @@ Prompts:
 - Improving diversity among the top results  
 - Handling more complex user tastes  
 
+- I would reduce the genre bonus or make it proportional so mood and energy have more influence on the total score. I would implement a diversity pass so the top "k" results span more than one genre. I would expand the catalog to cover underrepresented genres and moods. I would also incorporate acousticness into the final score to accomodate for users who prefer acoustic or non-acoustic songs. 
+
 ---
 
 ## 9. Personal Reflection  
@@ -116,3 +128,5 @@ Prompts:
 - What you learned about recommender systems  
 - Something unexpected or interesting you discovered  
 - How this changed the way you think about music recommendation apps  
+
+- Through this recommender, I learned that a simple recommender like this has real design decisions with real consequences. The choice to weigh genre at twice the value of mood wasn't obvious until the results showed the heavy bias genre had towards the total score of a song. On paper it looked reasonable for what the recommender was supposed to model, but it causes the recommender to not show songs outside of a user's "comfort zone". The gap between efficieny on paper versus the actual output shows why the music apps like Spotify or Apple Music invest a lot towards tuning recommendations. It's also altered my view on recommendations on these music apps, as there's a complex formula scoring that accounts for just more than recommended songs to user's based on genre. 
