@@ -51,8 +51,8 @@ def main() -> None:
             "history": [11, 16, 18],
         },
         {
-            "name": "Jazz Adventurer",
-            "favorite_genre": "jazz",
+            "name": "Varied Adventurer",
+            "favorite_genre": "varied",
             "favorite_mood": "moody",
             "target_energy": 0.5,
             "likes_acoustic": False,
