@@ -18,3 +18,16 @@ id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness
 17,Neon Mirage,Prism Circuit,electronic,dreamy,0.69,128,0.62,0.85,0.11
 18,Blue Matchbook,Sadie Raines,blues,melancholy,0.50,72,0.43,0.45,0.88
 19,Solar Drift,Orbit Bloom,ambient,dreamy,0.19,55,0.70,0.33,0.95
+20,Late Night Study,LoRoom,lofi,chill,0.38,76,0.54,0.61,0.80
+21,Rain on Glass,LoRoom,lofi,chill,0.41,74,0.57,0.59,0.75
+22,Dim Lamp Hours,Paper Lanterns,lofi,focused,0.36,80,0.52,0.63,0.82
+23,Foggy Morning,LoRoom,lofi,chill,0.44,70,0.60,0.65,0.78
+24,City Lights,Neon Echo,pop,happy,0.79,120,0.83,0.80,0.12
+26,Thunder Road,Voltline,rock,intense,0.92,148,0.45,0.68,0.08
+27,Iron Curtain,Stonefield,rock,intense,0.89,155,0.42,0.64,0.11
+28,Red Signal,Iron Veil,rock,energetic,0.94,160,0.50,0.70,0.06
+29,Winter Sonata,Clara Voss,classical,melancholy,0.25,65,0.35,0.28,0.96
+30,Moonlight Prelude,The Birch Trio,classical,melancholy,0.28,70,0.40,0.32,0.94
+32,Blue Corner,Slow Stereo,jazz,relaxed,0.45,92,0.68,0.55,0.85
+33,Late Night Improv,The Quartet,jazz,moody,0.52,88,0.62,0.50,0.80
+34,Smoke and Keys,Mellow Brass,jazz,chill,0.48,94,0.65,0.52,0.82

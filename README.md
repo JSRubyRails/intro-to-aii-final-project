@@ -1,282 +1,206 @@
-# 🎵 Music Recommender Simulation
+# GrooveMatch — AI Music Recommender
 
-## Project Summary
+## Original Project
 
-In this project you will build and explain a small music recommender system.
-
-Your goal is to:
-
-- Represent songs and a user "taste profile" as data
-- Design a scoring rule that turns that data into recommendations
-- Evaluate what your system gets right and wrong
-- Reflect on how this mirrors real world AI recommenders
-
-- GrooveMatch is a rule-based music recommender that scores songs from a 19-song catalog against a user's stated preferences — favorite genre, favorite mood, and target energy level. Each song is assigned a score up to 4.0 (genre match worth 2.0, mood match worth 1.0, and up to 1.0 for energy closeness), then the top 5 results are returned with a breakdown explaining each factor. The project explores how simple scoring formulas can produce sensible recommendations but also reveals real-world tradeoffs: genre dominates the score, acoustic preference is silently ignored, and users with underrepresented genres receive weaker candidates.
+This project extends the **Explain-an-AI Simulation (Module 3)** music recommender starter. The original goal was to build a rule-based song recommender that scores a catalog of songs against a user's stated preferences (genre, mood, and energy level), return the top 5 matches, and explain why each song ranked where it did. It was designed for classroom exploration of how simple scoring formulas mirror real-world AI recommenders and where bias can emerge from design decisions.
 
 ---
 
-## How The System Works
+## Title and Summary
 
-Explain your design in plain language.
-
-Some prompts to answer:
-
-- What features does each `Song` use in your system
-  - For example: genre, mood, energy, tempo
-- What information does your `UserProfile` store
-- How does your `Recommender` compute a score for each song
-- How do you choose which songs to recommend
-
-You can include a simple diagram or bullet list if helpful.
-
-- Songs have a genre (pop, lofi, rock, jazz, etc.) and mood (happy, chill, intense, relaxed, etc.). Audio characteristics like energy, valence, danceability, acousticness, and tempo_bpm capture what the song sounds like, most on a 0–1 scale.
-
-- The UserProfile stores four preference signals: favorite_genre, favorite_mood, target_energy (0–1 representing how high-energy the music should be), and likes_acoustic (whether the user prefers acoustic or electric-leaning sounds).
-
-- The Recommender scores each song using an additive points recipe:
-  - 2.0 if the song's genre matches the user's favorite genre
-  - 1.0 if the song's mood matches the user's favorite mood
-  - 0.0-1.0 for energy similarity: `1.0 - abs(song.energy - user.target_energy)
-  - Maximum possible score: 4.0 (genre + mood + perfect energy match)
-
-- Each song is scored and sorted highest to lowest. The top k songs (currently set to 5) are returned as recommendations.
-
-**Potential biases to be aware of**
-- Genre dominance: Genre is worth 2x mood, so a song that matches genre but has the wrong mood will outscore a song with the right mood but wrong genre. Users with niche genre preferences may get poor recommendations if the catalog is small.
-- Cold catalog bias: If few songs in the CSV match a user's genre, the system is forced to recommend lower-scoring songs. The recommendations are only as good as what's in the data.
-- Energy is the only continuous signal: Tempo, valence, and danceability are ignored entirely, so two very different-feeling songs could receive identical scores.
-- Acoustic preference is not scored: The UserProfile stores "likes_acoustic" but the current recipe does not use it, meaning that signal is silently dropped.
-
-
+**GrooveMatch** is a music recommender system that scores songs from a 34-song catalog against a user profile, detects genre bias in the results, and automatically re-ranks recommendations to improve diversity. It uses the Gemini API (gemma-3-1b-it) to generate natural-language explanations for each recommendation and a plain-English summary of any bias correction that occurred. The project demonstrates an agentic workflow — the system plans, acts, checks its own output, and corrects itself without human intervention.
 
 ---
 
-## Getting Started
+## Architecture Overview
 
-### Setup
+The system is organized into five stages:
 
-1. Create a virtual environment (optional but recommended):
+1. **Recommender** — scores all songs using an additive formula (genre match +2.0, mood match +1.0, energy similarity +0–1.0) and returns the top-5.
+2. **Agentic Critique Loop** — runs `detect_bias()` on the results. If any genre appears in 4+ of 5 slots (>70%), it re-ranks using a hard genre cap (max 2 songs per genre) and logs which songs were swapped.
+3. **Gemini API** — calls `ai_explain()` to generate a one-sentence explanation per song and `ai_critique_summary()` to narrate the bias correction.
+4. **Evaluator** — computes genre diversity, artist diversity, overall diversity score, and novelty (fraction of recommendations the user hasn't heard before).
+5. **Human / Testing Checkpoint** — the swap log, bias report, and metrics are printed for human review. `tests/test_recommender.py` validates the scoring logic (reference system_diagram.png for the system diagram).
 
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate      # Mac or Linux
-   .venv\Scripts\activate         # Windows
+---
 
-2. Install dependencies
+## Setup Instructions
+
+1. Clone the repository and navigate into the project folder:
+
+```bash
+cd intro-to-aii-final-project
+```
+
+2. Create and activate a virtual environment (optional but recommended):
+
+```bash
+python -m venv .venv
+source .venv/bin/activate      # Mac / Linux
+.venv\Scripts\activate         # Windows
+```
+
+3. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Run the app:
+4. Create your `.env` file from the example and add your Gemini API key:
 
 ```bash
-python -m src.main
+cp .env.example .env
 ```
 
-### Running Tests
+Open `.env` and replace the placeholder with your key from [aistudio.google.com](https://aistudio.google.com):
 
-Run the starter tests with:
+```
+GOOGLE_API_KEY=your-key-here
+```
+
+5. Run the recommender:
+
+```bash
+python3 src/main.py
+```
+
+6. Run tests:
 
 ```bash
 pytest
 ```
 
-You can add more tests in `tests/test_recommender.py`.
+---
+
+## Sample Interactions
+
+### Example 1 — No Bias Detected (Pop Fan)
+
+**Input:**
+```
+favorite_genre: pop | favorite_mood: happy | target_energy: 0.8 | likes_acoustic: False
+user_history: [1, 5, 10]
+```
+
+**Output:**
+```
+#1  City Lights by Neon Echo
+    Why: “City Lights” by Neon Echo’s upbeat pop sound and energetic vibe perfectly align with a listener seeking a joyful and uplifting experience with a moderate energy level (0.8).
+
+#2  Sunrise City by Neon Echo
+    Why: Sunrise City perfectly suits a listener who enjoys upbeat pop music with a bright, energetic vibe and a mood that’s inherently cheerful and optimistic.
+
+#3  Gym Hero by Max Pulse
+    Why: “Gym Hero” by Max Pulse’s energetic pop sound and uplifting vibe perfectly aligns with a listener who appreciates happy, high-energy music with a moderate intensity (0.8) seeking a feel-good experience.
+
+#4  Rooftop Lights by Indigo Parade
+    Why: “Rooftop Lights” by Indigo Parade’s upbeat, shimmering pop sound and energetic vibe perfectly aligns with a listener seeking a joyful and uplifting experience with a moderate tempo and intensity (0.8).
+
+#5  Block Party by Crate Kings
+    Why: "Block Party" by Crate Kings’ energetic, upbeat vibe and high energy level perfectly complements a listener who appreciates pop music with a cheerful and optimistic feel, aiming for a mood of 0.8.
+
+  [AI Critique] Here's an explanation of the log:
+
+The music recommender ran a self-critique loop and found no significant bias in its recommendations. It removed several songs – specifically, a few indie pop tracks and a few classic rock songs – because they were deemed to be less frequently listened to by the user base and thus didn’t contribute significantly to the overall diversity of the recommendations. Instead, the removals were replaced with a curated selection of upbeat electronic dance tracks, aiming to increase engagement and introduce users to new genres and artists.
+Metrics: {'genre_diversity': 3, 'artist_diversity': 4, 'diversity_score': 7, 'novelty': 0.4}
+```
 
 ---
 
-## Experiments You Tried
+### Example 2 — Bias Detected and Corrected (Chill Listener)
 
-Use this section to document the experiments you ran. For example:
+**Input:**
+```
+favorite_genre: lofi | favorite_mood: chill | target_energy: 0.4 | likes_acoustic: True
+user_history: [2, 4, 9, 20]
+```
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+**Output:**
+```
+#1  Rain on Glass by LoRoom
+    Why: “Rain on Glass” by LoRoom’s lofi, chill, and energy-focused sound perfectly complements a listener seeking a relaxing and subtly upbeat atmosphere with a low-tempo vibe.
 
-- Standard Profiles: tested three baseline user types (Pop Fan, Chill Listener, Workout Mode) to verify the scoring produced sensible rankings. In all three cases the top result was a song that matched both genre and mood, confirming the additive scoring worked as intended.
+#2  Midnight Coding by LoRoom
+    Why: Midnight Coding by LoRoom perfectly fits a listener who appreciates lofi music with a chill vibe and a low energy level (0.4) due to its dreamy, atmospheric soundscape and relaxing, understated feel.
 
-- Out-of-range energy (1.5): set target_energy above the 0–1 scale. The system did not crash, but every song received a negative energy contribution since 1.0 - abs(song.energy - 1.5) is always below zero. Genre and mood bonuses still pushed matching songs to the top, but scores were lower than normal across the board.
+#3  Smoke and Keys by Mellow Brass
+    Why: “Smoke and Keys” by Mellow Brass’ chill jazz-influenced lofi track perfectly aligns with a listener seeking a relaxing, low-energy vibe with a focus on subtle, atmospheric soundscapes and a mellow, 0.4 energy level.
 
-- Mood not in dataset ("sad"): no song in the catalog has mood = sad, so the mood bonus never fired. The recommender silently fell back to genre + energy ranking with no warning. The top results were genre matches but none felt emotionally correct for the stated preference.
+#4  Spacewalk Thoughts by Orbit Bloom
+    Why: “Spacewalk Thoughts” by Orbit Bloom’s ambient, chill, and energy-low vibe perfectly complements a listener seeking a relaxing, low-tempo lofi track with a gentle, sustained energy level of 0.4.
 
-- Genre not in dataset ("k-pop"): same silent failure: the genre bonus never applied, so the entire top 5 was decided by energy similarity alone, surfacing songs that happened to match the target energy regardless of style.
+#5  Coffee Shop Stories by Slow Stereo
+    Why: “Coffee Shop Stories” by Slow Stereo’s jazz-infused lofi tracks with a relaxed tempo and low energy perfectly complement a listener seeking a chill, atmospheric experience with a subtle, consistent vibe.
 
-- Conflicting preferences (classical + melancholy + high energy 0.9): the only classical song in the catalog has energy 0.22, so it received the genre bonus but a heavy energy penalty. A non-classical song with energy closer to 0.9 nearly outscored it, revealing how strongly a mismatched energy hurts a genre-matched song.
+  [AI Critique] The music recommender identified a strong bias towards the genre "lofi" and the artist "LoRoom," leading to a disproportionate representation of this style.  The system subsequently removed songs with a similar vibe – specifically, "LoRoom" – and replaced them with songs that offer a broader range of moods and styles, including tracks with a slightly more upbeat feel and a focus on "chill" music, aiming for a more diverse and engaging recommendation experience.
+  [Swap] Removed 'Late Night Study' (lofi, chill) → Added 'Smoke and Keys' (jazz, chill) to reduce lofi dominance
+  [Swap] Removed 'Foggy Morning' (lofi, chill) → Added 'Spacewalk Thoughts' (ambient, chill) to reduce lofi dominance
+  [Swap] Removed 'Library Rain' (lofi, chill) → Added 'Coffee Shop Stories' (jazz, relaxed) to reduce lofi dominance
+Metrics: {'genre_diversity': 3, 'artist_diversity': 4, 'diversity_score': 7, 'novelty': 0.8}
+```
 
-- Acousticness ignored: set a folk/nostalgic profile with likes_acoustic = True. The acousticness field is stored in the UserProfile but is never used in score_song, so two songs with acousticness 0.91 and 0.08 scored identically. The preference was silently dropped.
-
-- Tie-breaking at energy 0.385: set target_energy exactly between the two lofi songs (Library Rain at 0.35 and Focus Flow at 0.40). Both are equidistant, so their energy scores are equal. Python's sort is stable, meaning whichever song appeared first in the CSV always wins — the tie is resolved by catalog order, not any meaningful signal.
 ---
 
-## Limitations and Risks
+## Design Decisions
 
-Summarize some limitations of your recommender.
+**Why genre is worth +2.0:**
+Genre was weighted highest because it is the strongest signal of whether a user will enjoy a song. A pop listener rarely wants a metal recommendation regardless of energy match. The tradeoff is that genre dominates the score — a genre-matched song with the wrong mood will almost always outscore a better overall fit from a different genre.
 
-Examples:
+**Why the agentic re-rank uses a hard genre cap instead of a penalty:**
+An early version penalized over-represented genres by subtracting points. This failed for profiles with strong genre dominance (like jazz or lofi) because the genre bonus (+2.0) was too large to overcome with a small penalty. A hard cap of 2 songs per genre guarantees diversity regardless of score spread.
 
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
+**Why the Gemini API is used for explanations instead of rule-based strings:**
+Rule-based explanations produce the same formulaic output every time. The Gemini API generates natural-language explanations that vary per song and feel more like something a real app would show a user. The tradeoff is rate limits and latency — a 2-second delay is added between calls to stay under the free-tier quota of 30 requests/minute.
 
-You will go deeper on this in your model card.
+**Why novelty requires a user history list:**
+Novelty is only meaningful relative to what a specific user has already heard. Rather than hardcoding a shared history, each profile carries its own `history` list of previously heard song IDs so novelty scores are personalized.
 
-- Genre is weighted at 2.0 points (twice the value of mood) which means a genre-matched song with the wrong mood and wrong energy will almost always outscore a better overall fit from a different genre
+---
 
-- Acousticness is stored in the user profile but never used in scoring, so acoustic preference is silently ignored every time
+## Testing Summary
 
-- Moods and genres not present in the catalog (e.g. "sad", "angry", "k-pop") fail silently and the system returns results without any warning that the user's preference matched nothing
+**What worked:**
+- Standard profiles (Pop Fan, Chill Listener, Workout Mode) produced sensible top-5 results where the top song always matched both genre and mood.
+- The agentic critique loop correctly detected and resolved bias for all three biased profiles (Chill Listener, Workout Mode, Jazz Adventurer).
+- Novelty scores correctly reflected each profile's listening history.
 
-- Energy values outside the 0–1 range are accepted without validation, causing every song to receive a negative energy contribution and distorting the rankings
+**What didn't work initially:**
+- The penalty-based re-ranking failed for jazz and lofi profiles because the +2.0 genre bonus was too large to overcome. Switching to a hard genre cap fixed this.
+- The Gemini model (gemma-3-1b-it) hallucinated song names in the critique summary when asked to name specific swapped songs. The fix was to print swap details directly from the structured log and only use the AI for the high-level bias narrative.
+- The free-tier quota for gemini-2.0-flash was 0 requests, requiring a switch to gemma-3-1b-it.
 
-- There is no diversity mechanism, so the top 5 results can all come from the same genre, reinforcing what a user already listens to rather than surfacing anything new
-
-- Tempo, valence, and danceability are loaded from the dataset but contribute nothing to the score, meaning two songs that feel very different can receive identical rankings
-
+**What I learned:**
+Bias in the results was a direct consequence of a design decision (genre weight = 2.0) that looked reasonable on paper. The system needed an explicit correction mechanism — detecting the problem wasn't enough.
 
 ---
 
 ## Reflection
 
-Read and complete `model_card.md`:
+Building GrooveMatch showed me that a recommender is just a number produced by a formula, and every design choice about what to weight and how much becomes a statement about whose taste matters. Giving genre a 2.0 bonus seemed intuitive, but it caused the system to reinforce what a user already listens to rather than surfacing anything new — which is exactly the criticism people level at real apps like Spotify.
 
-[**Model Card**](model_card.md)
-
-Write 1 to 2 paragraphs here about what you learned:
-
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
-
-- Through building GrooveMatch, I realized that the recommender system is solely a number calculated through the sum of weighted rules and lacks any understanding of music. The simplicity of this recommender allows it to be transparent, as it's easy to trace why a song ranked where t did. Real-world recommenders work in the same manner as this, but the features and weights used are much more complex and thorough instead of the simpler rules implemented in GrooveMatch. 
-
-- The bias in the system was a consequence of the design decisions. Giving genre a 2.0 bonus seemed reasonable, but it meant the system would almost always recommend songs in the same genre regardless of mood or energy fit. A user with niche genre would receive worse recommendations simply because the catalog is smaller. Biases like this are prone to show up in real-world products, where a system that's designed to lean towards majority preferences will underrepresent users who have non-mainstream tastes. 
+The most useful thing I added was the agentic critique loop. Having the system detect its own bias and correct it without human input changed the project from a passive scorer into something that can actually check its work. That loop — plan, act, evaluate, correct — is the same pattern used in more advanced AI agents, just applied to a simple music list. It made the system more honest about its own limitations.
 
 
----
-
-## 7. `model_card_template.md`
-
-Combines reflection and model card framing from the Module 3 guidance. :contentReference[oaicite:2]{index=2}  
-
-```markdown
-# 🎧 Model Card - Music Recommender Simulation
-
-## 1. Model Name
-
-Give your recommender a name, for example:
-
-> VibeFinder 1.0
-
----
-
-## 2. Intended Use
-
-- What is this system trying to do
-- Who is it for
-
-Example:
-
-> This model suggests 3 to 5 songs from a small catalog based on a user's preferred genre, mood, and energy level. It is for classroom exploration only, not for real users.
-
----
-
-## 3. How It Works (Short Explanation)
-
-Describe your scoring logic in plain language.
-
-- What features of each song does it consider
-- What information about the user does it use
-- How does it turn those into a number
-
-Try to avoid code in this section, treat it like an explanation to a non programmer.
-
----
-
-## 4. Data
-
-Describe your dataset.
-
-- How many songs are in `data/songs.csv`
-- Did you add or remove any songs
-- What kinds of genres or moods are represented
-- Whose taste does this data mostly reflect
-
----
-
-## 5. Strengths
-
-Where does your recommender work well
-
-You can think about:
-- Situations where the top results "felt right"
-- Particular user profiles it served well
-- Simplicity or transparency benefits
-
----
-
-## 6. Limitations and Bias
-
-Where does your recommender struggle
-
-Some prompts:
-- Does it ignore some genres or moods
-- Does it treat all users as if they have the same taste shape
-- Is it biased toward high energy or one genre by default
-- How could this be unfair if used in a real product
-
----
-
-## 7. Evaluation
-
-How did you check your system
-
-Examples:
-- You tried multiple user profiles and wrote down whether the results matched your expectations
-- You compared your simulation to what a real app like Spotify or YouTube tends to recommend
-- You wrote tests for your scoring logic
-
-You do not need a numeric metric, but if you used one, explain what it measures.
-
----
-
-## 8. Future Work
-
-If you had more time, how would you improve this recommender
-
-Examples:
-
-- Add support for multiple users and "group vibe" recommendations
-- Balance diversity of songs instead of always picking the closest match
-- Use more features, like tempo ranges or lyric themes
-
----
-
-## 9. Personal Reflection
-
-A few sentences about what you learned:
-
-- What surprised you about how your system behaved
-- How did building this change how you think about real music recommenders
-- Where do you think human judgment still matters, even if the model seems "smart"
+**Testing**
+10 out of 10 tests passed. Tests cover four areas: scoring correctness (genre-matched songs always rank above mood-only matches), bias detection (correctly flags when one genre dominates >70% of results and passes diverse lists), the agentic critique loop (verified that bias is resolved after re-ranking and that no re-rank occurs when results are already diverse), and evaluation metrics (genre diversity, artist diversity, and novelty all return correct values). The only reliability issue encountered was with the Gemini API critique summary — the small gemma-3-1b-it model occasionally hallucinated song names, which was fixed by printing swap details directly from the structured log instead of relying on the AI to extract them.
 
 
 
 
-## Output of song recommendations
+**What are the limitations or biases in your system?**
+Genre is weighted at +2.0 points — twice the value of mood — which means a genre-matched song almost always outranks a better overall fit from a different genre. The catalog is also uneven: genres like lofi have 7 songs while others have only 1, so users with niche preferences get weaker candidates. Moods and genres not in the catalog (like "sad" or "k-pop") fail silently with no warning to the user.
 
-![alt text](recommend_output.png)
 
 
-## Edge-cases 
+**Could your AI be misused, and how would you prevent that?**
+The Gemini API narrates bias corrections in plain English, but the small model (gemma-3-1b-it) sometimes invents song names or genres that don't exist in the results. If someone relied on the AI narrative as ground truth rather than the structured log, they'd get misinformation. The fix is what we already did — use the AI only for high-level summaries and print factual swap details directly from the code.
 
-1. ![alt text](first_edgecase.png)
 
-2. ![alt text](second_edgecase.png)
 
-3. ![alt text](third_edgecase.png)
+**What surprised you while testing your AI's reliability?**
+The penalty-based re-ranking approach failed completely for profiles with strong genre dominance. Even after subtracting penalty points, jazz and lofi songs still outscore everything else because the +2.0 genre bonus is too large to overcome with a small deduction. Switching to a hard genre cap (max 2 per genre) was the only approach that actually guaranteed bias resolution every time.
 
-4. ![alt text](fourth_edgecase.png)
 
-5. ![alt text](fifth_edgecase.png)
 
-6. ![alt text](image.png)
+**Collaboration with AI during this project:**
+One helpful instance: Claude suggested switching from a penalty-based re-ranking to a hard genre cap, which immediately fixed the bias resolution failures that the penalty approach couldn't handle. One flawed instance: Claude initially suggested using google.generativeai as the package for Gemini integration, which turned out to be deprecated — the correct package is google-genai, and the model name gemini-1.5-flash wasn't accessible on the free tier either, requiring multiple corrections before it worked.

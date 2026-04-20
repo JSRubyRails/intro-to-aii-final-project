@@ -9,11 +9,13 @@ You will implement the functions in recommender.py:
 - recommend_songs
 """
 
-from src.recommender import load_songs, recommend_songs
+from recommender import load_songs, recommend_songs, Song, UserProfile, Recommender, ai_explain, ai_critique_summary
 
 
 def main() -> None:
     songs = load_songs("data/songs.csv")
+    song_objs = [Song(**song) for song in songs]
+    recommender = Recommender(song_objs)
 
     profiles = [
         {
@@ -22,6 +24,7 @@ def main() -> None:
             "favorite_mood": "happy",
             "target_energy": 0.8,
             "likes_acoustic": False,
+            "history": [1, 5, 10],
         },
         {
             "name": "Chill Listener",
@@ -29,6 +32,7 @@ def main() -> None:
             "favorite_mood": "chill",
             "target_energy": 0.4,
             "likes_acoustic": True,
+            "history": [2, 4, 9, 20],
         },
         {
             "name": "Workout Mode",
@@ -36,65 +40,49 @@ def main() -> None:
             "favorite_mood": "intense",
             "target_energy": 0.95,
             "likes_acoustic": False,
-        },
-        # --- Adversarial / edge-case profiles ---
-        {
-            "name": "[ADVERSARIAL] Out-of-range energy (1.5)",
-            "favorite_genre": "lofi",
-            "favorite_mood": "chill",
-            "target_energy": 1.5,
-            "likes_acoustic": True,
+            "history": [3, 14],
         },
         {
-            "name": "[ADVERSARIAL] Conflicting high energy + melancholy mood",
+            "name": "Classical Enthusiast",
             "favorite_genre": "classical",
             "favorite_mood": "melancholy",
-            "target_energy": 0.9,
-            "likes_acoustic": False,
-        },
-        {
-            "name": "[ADVERSARIAL] Mood not in dataset (sad)",
-            "favorite_genre": "pop",
-            "favorite_mood": "sad",
-            "target_energy": 0.8,
-            "likes_acoustic": False,
-        },
-        {
-            "name": "[ADVERSARIAL] Genre not in dataset (k-pop)",
-            "favorite_genre": "k-pop",
-            "favorite_mood": "happy",
-            "target_energy": 0.7,
-            "likes_acoustic": False,
-        },
-        {
-            "name": "[ADVERSARIAL] likes_acoustic ignored (folk/nostalgic)",
-            "favorite_genre": "folk",
-            "favorite_mood": "nostalgic",
             "target_energy": 0.3,
             "likes_acoustic": True,
+            "history": [11, 16, 18],
         },
         {
-            "name": "[ADVERSARIAL] Tie-breaking undefined (lofi/chill/energy=0.385)",
-            "favorite_genre": "lofi",
-            "favorite_mood": "chill",
-            "target_energy": 0.385,
-            "likes_acoustic": True,
+            "name": "Jazz Adventurer",
+            "favorite_genre": "jazz",
+            "favorite_mood": "moody",
+            "target_energy": 0.5,
+            "likes_acoustic": False,
+            "history": [7, 15],
         },
     ]
 
     for profile in profiles:
         name = profile.pop("name")
-        recommendations = recommend_songs(profile, songs, k=5)
-
+        history = profile.pop("history")
+        user = UserProfile(**profile)
+        recommended, critique_log = recommender.recommend_with_critique(user, k=5)
         print("\n" + "=" * 50)
         print(f"  Top 5 for: {name}")
         print("=" * 50)
-        for i, (song, score, explanation) in enumerate(recommendations, start=1):
-            print(f"\n#{i}  {song['title']} by {song['artist']}")
-            print(f"    Score : {score:.2f} / 4.00")
+        for i, song in enumerate(recommended, start=1):
+            explanation = ai_explain(user, song)
+            print(f"\n#{i}  {song.title} by {song.artist}")
             print(f"    Why   : {explanation}")
+        swap_entries = [e for e in critique_log if e.startswith("Removed")]
+        bias_entries = [e for e in critique_log if not e.startswith("Removed")]
+        ai_summary = ai_critique_summary(bias_entries)
+        print(f"\n  [AI Critique] {ai_summary}")
+        for swap in swap_entries:
+            print(f"  [Swap] {swap}")
+        metrics = recommender.evaluate_metrics(recommended, user, user_history=history)
+        print(f"Metrics: {metrics}")
         print("\n" + "=" * 50)
         profile["name"] = name
+        profile["history"] = history
 
 
 if __name__ == "__main__":
